@@ -175,9 +175,7 @@ class EKF:
         Qd = np.zeros_like(self.Cov_)
         G = np.zeros((RANK, NOISERANK), dtype=np.float64)
 
-        ff = self.robotsensor_.footforce.copy()
-        th = getattr(self.paras_, "contact_force_threshold", 20.0)
-        self.estimated_contacts = (ff > th).astype(float)
+        self.estimated_contacts = self._estimate_contacts(self.robotsensor_)
 
         F.fill(0.0); 
         Qd.fill(0.0); 
@@ -291,6 +289,56 @@ class EKF:
                 self.EKFUpdate(dz, H, R)
                 self.measument_updated_ = True
 
+
+    def _compute_leg_jacobian(self, legid: int, jp: np.ndarray) -> np.ndarray:
+        """Compute 3x3 foot Jacobian in body frame for a single leg."""
+        lfoot = 1 if legid in (0, 2) else -1
+        ffoot = 1 if legid < 2 else -1
+        ot = self.paras_.robotpara.ot
+        lc, lt = self.paras_.robotpara.lc, self.paras_.robotpara.lt
+        s1, s2, s3 = np.sin(jp)
+        c1, c2, c3 = np.cos(jp)
+        s23 = np.sin(jp[1] + jp[2])
+        c23 = np.cos(jp[1] + jp[2])
+
+        J = np.zeros((3, 3))
+        J[0] = [0, -lc * c23 - lt * c2, -lc * c23]
+        J[1] = [
+            lt * c1 * c2 - lfoot * ot * s1 + lc * c1 * c23,
+            -s1 * (lc * s23 + lt * s2),
+            -lc * s23 * s1,
+        ]
+        J[2] = [
+            lt * c2 * s1 + lfoot * ot * c1 + lc * s1 * c23,
+            c1 * (lc * s23 + lt * s2),
+            lc * s23 * c1,
+        ]
+        Rb = self.paras_.robotbody_rotmat @ np.diag([1.0, 1.0, -1.0])
+        return Rb @ J
+
+    def _estimate_contacts(self, rs: RobotSensor) -> np.ndarray:
+        """Estimate foot contact from GRF (J^{-T} * tau), fall back to raw foot force."""
+        contacts = np.zeros(4)
+        has_torque = np.any(rs.joint_torque != 0)
+
+        if has_torque:
+            grf_th = getattr(self.paras_, "grf_contact_threshold", 25.0)
+            for i in range(4):
+                jp = rs.joint_angular_position[i * 3 : i * 3 + 3]
+                tau = rs.joint_torque[i * 3 : i * 3 + 3]
+                J = self._compute_leg_jacobian(i, jp)
+                try:
+                    grf = -np.linalg.solve(J.T, tau)
+                except np.linalg.LinAlgError:
+                    grf = np.zeros(3)
+                # z-component of GRF (in body frame, positive = pushing ground)
+                contacts[i] = 1.0 if abs(grf[2]) > grf_th else 0.0
+        else:
+            ff = rs.footforce.copy()
+            th = getattr(self.paras_, "contact_force_threshold", 20.0)
+            contacts = (ff > th).astype(float)
+
+        return contacts
 
     def computeRelFootPosVel(self,robotsensor_: RobotSensor, legid: int):
         lfoot = 1 if legid in (0, 2) else -1

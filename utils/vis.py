@@ -8,22 +8,37 @@ def plot_traj(traj_path: Path):
         raise FileNotFoundError(traj_path)
 
     # t px py pz roll pitch yaw
-    data = np.loadtxt(traj_path, skiprows=1)
-    x, y = data[:, 1], data[:, 2]
+    data = np.genfromtxt(traj_path, skip_header=1, invalid_raise=False)
+    x, y, z = data[:, 1], data[:, 2], data[:, 3]
 
-    fig, ax = plt.subplots(figsize=(6, 6))
-    ax.plot(x, y, lw=1.0)
-    ax.set_xlabel('X [m]')
-    ax.set_ylabel('Y [m]')
-    ax.set_title('XY Trajectory_python (Top View)')
-    ax.grid(True)
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+    
+    # Subplot 1: XY (Top View)
+    axes[0].plot(x, y, lw=1.0)
+    axes[0].set_xlabel('X [m]')
+    axes[0].set_ylabel('Y [m]')
+    axes[0].set_title('XY Trajectory (Top View)')
+    axes[0].grid(True)
+    axes[0].set_aspect('equal', adjustable='box')
 
-    ax.set_aspect('equal', adjustable='box')
+    # Subplot 2: YZ (Front View)
+    axes[1].plot(y, z, lw=1.0, color='orange')
+    axes[1].set_xlabel('Y [m]')
+    axes[1].set_ylabel('Z [m]')
+    axes[1].set_title('YZ Trajectory (Front View)')
+    axes[1].grid(True)
+    axes[1].set_aspect('equal', adjustable='box')
 
-    dx, dy = (x.max()-x.min()), (y.max()-y.min())
-    pad = 0.05 * max(dx, dy) if max(dx, dy) > 0 else 1.0
-    ax.set_xlim(x.min()-pad, x.max()+pad)
-    ax.set_ylim(y.min()-pad, y.max()+pad)
+    # Subplot 3: XZ (Side View)
+    axes[2].plot(x, z, lw=1.0, color='green')
+    axes[2].set_xlabel('X [m]')
+    axes[2].set_ylabel('Z [m]')
+    axes[2].set_title('XZ Trajectory (Side View)')
+    axes[2].grid(True)
+    axes[2].set_aspect('equal', adjustable='box')
 
     plt.tight_layout()
-    plt.show()
+    save_path = traj_path.parent / "trajectory_all_views.png"
+    plt.savefig(save_path)
+    print(f"[INFO] Multi-view trajectory plot saved to: {save_path}")
+    # plt.show()

@@ -103,6 +103,8 @@ def main():
         rs.joint_angular_position = row[7:19].astype(np.float64).copy()
         rs.joint_angular_velocity = row[19:31].astype(np.float64).copy()
         rs.footforce              = row[31:35].astype(np.float64).copy()
+        if row.shape[0] > 35:
+            rs.joint_torque       = row[35:47].astype(np.float64).copy()
 
       
         ekf.addImuData(imu)
@@ -119,7 +121,7 @@ def main():
 
 
     print("drawing...")
-    CONFIG_PATH = Path(r".\config\go2.yaml")
+    CONFIG_PATH = cfg_path
     if not CONFIG_PATH.exists():
         raise FileNotFoundError(f"config.yaml not found: {CONFIG_PATH}")
 

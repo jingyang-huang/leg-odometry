@@ -121,7 +121,20 @@ class DataLoader:
         robot_sensor_np[0, 32] = lowstate_msg.foot_force[0]
         robot_sensor_np[0, 33] = lowstate_msg.foot_force[3]
         robot_sensor_np[0, 34] = lowstate_msg.foot_force[2]
-        
+
+        # tau_est (same motor reorder as q/dq: FL, FR, RL, RR)
+        robot_sensor_np[0, 35] = lowstate_msg.motor_state[3].tau_est
+        robot_sensor_np[0, 36] = lowstate_msg.motor_state[4].tau_est
+        robot_sensor_np[0, 37] = lowstate_msg.motor_state[5].tau_est
+        robot_sensor_np[0, 38] = lowstate_msg.motor_state[0].tau_est
+        robot_sensor_np[0, 39] = lowstate_msg.motor_state[1].tau_est
+        robot_sensor_np[0, 40] = lowstate_msg.motor_state[2].tau_est
+        robot_sensor_np[0, 41] = lowstate_msg.motor_state[9].tau_est
+        robot_sensor_np[0, 42] = lowstate_msg.motor_state[10].tau_est
+        robot_sensor_np[0, 43] = lowstate_msg.motor_state[11].tau_est
+        robot_sensor_np[0, 44] = lowstate_msg.motor_state[6].tau_est
+        robot_sensor_np[0, 45] = lowstate_msg.motor_state[7].tau_est
+        robot_sensor_np[0, 46] = lowstate_msg.motor_state[8].tau_est
 
         return robot_sensor_np
 
@@ -137,7 +150,7 @@ class DataLoader:
         data_connections = [x for x in bag.connections if x.topic == datatopic]
         lowstate_msgs = bag.messages(connections=data_connections)
 
-        lowstate_dim = 35  # 1 timestamp + 6 imu + 24 motor state + 4 foot force
+        lowstate_dim = 47  # 1 timestamp + 6 imu + 24 motor(q,dq) + 4 foot force + 12 tau_est
         
         lowstate_np = np.zeros((msg_counts, lowstate_dim))
         

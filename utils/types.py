@@ -58,6 +58,7 @@ class RobotSensor:
         self.timestamp = 0.0
         self.joint_angular_position = np.zeros(12,dtype=DT)  # Eigen::Vector12d
         self.joint_angular_velocity = np.zeros(12,dtype=DT)  # Eigen::Vector12d
+        self.joint_torque = np.zeros(12,dtype=DT)            # Eigen::Vector12d (tau_est)
         self.footforce = np.zeros(4,dtype=DT)  # Eigen::Vector4d
 
 

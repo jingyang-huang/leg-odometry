@@ -6,7 +6,7 @@ from .types import IMU, RobotSensor
 
 
 def make_streams_from_lowstate(lowstate_np: np.ndarray, imu_rate_hz: float):
-    assert lowstate_np.shape[1] >= 35
+    assert lowstate_np.shape[1] >= 35  # 47 if tau_est available
     dt_default = 1.0 / float(imu_rate_hz)
 
    
@@ -28,6 +28,8 @@ def make_streams_from_lowstate(lowstate_np: np.ndarray, imu_rate_hz: float):
             rs.joint_angular_position = row[7:19].astype(np.float64).copy()
             rs.joint_angular_velocity = row[19:31].astype(np.float64).copy()
             rs.footforce = row[31:35].astype(np.float64).copy()
+            if lowstate_np.shape[1] > 35:
+                rs.joint_torque = row[35:47].astype(np.float64).copy()
             yield rs
 
     return imu_gen(), sensor_gen()
